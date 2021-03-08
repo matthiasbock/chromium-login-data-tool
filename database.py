@@ -7,13 +7,19 @@ def databaseImportLogins(filename):
     conn = sqlite3.connect(filename)
     cursor = conn.cursor()
     data = cursor.execute('SELECT action_url, username_value, password_value FROM logins')
-    return data
+    result = []
+    for url, user, password in data:
+        result += [(url, user, password)]
+    conn.close()
+    return result
 
 
 def databaseUpdatePassword(filename, url=None, user=None, encryptedPassword=None):
     conn = sqlite3.connect(filename)
     cursor = conn.cursor()
     data = cursor.execute('UPDATE logins WHERE ... TODO SET password_value=...')
+    conn.commit()
+    conn.close()
 
 
 def getLogin(loginList, url, user):
