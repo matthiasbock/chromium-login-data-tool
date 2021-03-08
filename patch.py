@@ -36,9 +36,21 @@ for url, user, encryptedPassword in loginsBackup:
     print(sepCount * "-")
     print("URL: {:s}\nUser: {:s}".format(url, user))
 
+    success, plaintextBackup = decryptDatabasePassword(encryptedPassword, keyringPassword, debug=False)
+    if success:
+        print("Password decryption succeeded.")
+    else:
+        print("Password decryption failed. Skipping.")
+        print(sepCount * "-")
+        continue
+
     if hasEntry(loginsBroken, url, user):
-        print("The broken database also has such an entry.")
-        success, plaintextBackup = decryptDatabasePassword(encryptedPassword, keyringPassword, debug=False)
-        #success, plaintextBroken = decryptDatabasePassword(encryptedPassword, keyringPassword, debug=False)
+        print("The broken database also has an entry for this URL and username:")
+        brokenPassword = getPassword(loginsBroken, url, user)
+        success, plaintextBroken = decryptDatabasePassword(brokenPassword, keyringPassword, debug=False)
+        if success:
+            print("Password decryption succeeded. Nothing to do here.")
+        else:
+            print("Password decryption failed. Good news: This password can be recovered.")
 
     print(sepCount * "-")

@@ -22,10 +22,10 @@ def databaseUpdatePassword(filename, url=None, user=None, encryptedPassword=None
     conn.close()
 
 
-def getLogin(loginList, url, user):
+def getPassword(loginList, url, user):
     for _url, _user, _password in loginList:
         if (_url == url) and (_user == user):
-            return _url, _user, _password
+            return _password
     return None, None, None
 
 

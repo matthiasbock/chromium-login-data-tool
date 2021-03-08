@@ -145,6 +145,27 @@ def decryptDatabasePassword(encryptedPassword, keyringPassword, debug=False):
         print("Error: Failed to detect encryption method (unsupported method?)")
         success = False
 
+    if success:
+        # Run additional checks
+        if len(plaintext) < 3:
+            # That's awfully short. Assume that something went wrong.
+            success = False
+        else:
+            # Decrypted data must not begin with an encrypted database entry prefix.
+            prefix = plaintext[:2]
+            if (prefix == "v8") or (prefix == "v9"):
+                print("Error: Decrypted password is apparently still encrypted.")
+                success = False
+            prefix = plaintext[:3]
+            if (prefix == "v10") or (prefix == "v11"):
+                print("Error: Decrypted password is apparently still encrypted.")
+                success = False
+            # A password can only consist of printable characters.
+            trailing = plaintext[3:]
+            if not trailing.isprintable():
+                print("Error: Non-printable characters in password.")
+                success = False
+
     return success, plaintext
 
 
