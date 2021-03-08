@@ -7,7 +7,7 @@ from Crypto.Hash import *
 from Crypto.Protocol.KDF import PBKDF2
 
 
-sepCount = 100
+sepCount = 130
 
 chromiumCryptoSalt = b'saltysalt'
 chromiumCryptoBitwidth = 128
@@ -42,7 +42,7 @@ def trimPlaintext(x, debug=False):
     return s
 
 
-def encryptAES128(plaintext, password, debug=False):
+def encryptAES(plaintext, password, debug=False):
     salt = chromiumCryptoSalt
     bits = chromiumCryptoBitwidth
     length = int(bits/8)
@@ -72,7 +72,7 @@ def encryptAES128(plaintext, password, debug=False):
     return success, ciphertext
 
 
-def decryptAES128(ciphertext, password, debug=False):
+def decryptAES(ciphertext, password, debug=False):
     salt = chromiumCryptoSalt
     bits = chromiumCryptoBitwidth
     length = int(bits/8)
@@ -107,8 +107,8 @@ def testCrypto(debug=False):
         print("Testing encryption / decryption:")
     testData = "randomXY/Z01234"
     password = "My&Password"
-    encryptionSuccess, ciphertext = encryptAES128(testData, password, debug=debug)
-    decryptionSuccess, plaintext  = decryptAES128(ciphertext, password, debug=debug)
+    encryptionSuccess, ciphertext = encryptAES(testData, password, debug=debug)
+    decryptionSuccess, plaintext  = decryptAES(ciphertext, password, debug=debug)
     if plaintext == testData:
         if debug:
             print("Crypto engine seems to work.")
@@ -120,28 +120,41 @@ def testCrypto(debug=False):
         sys.exit(1)
 
 
-def decryptDatabasePassword(encryptedPassword, keyringPassword):
+def decryptDatabasePassword(encryptedPassword, keyringPassword, debug=False):
 
     if len(encryptedPassword) < 3:
         print("Error: Password is too short.")
         return
-    print("Password (encrypted): ", encryptedPassword)
+
+    if debug:
+        print("Password (encrypted): ", encryptedPassword)
     ciphertext = encryptedPassword[3:]
+
+    success = None
+    plaintext = None
 
     if encryptedPassword[:3] == b"v10":
         password = chromiumMasterPassword
-        return decryptAES128(ciphertext, password)
+        success, plaintext = decryptAES(ciphertext, password, debug=debug)
 
     if encryptedPassword[:3] == b"v11":
         password = keyringPassword
-        return decryptAES128(ciphertext, password)
+        success, plaintext = decryptAES(ciphertext, password, debug=debug)
 
-    print("Error: Password entry is improperly formatted.")
+    if success is None:
+        print("Error: Failed to detect encryption method (unsupported method?)")
+        success = False
+
+    return success, plaintext
 
 
 def encryptPlaintextPassword(plaintext):
     password = chromiumMasterPassword
-    ciphertext = encryptAES128(plaintext, password)
-    ciphertext = b"v10" + ciphertext
-    print("Encrypted: ", plaintext, " -> ", ciphertext)
-    return ciphertext
+    success, ciphertext = encryptAES(plaintext, password)
+    if success:
+        ciphertext = b"v10" + ciphertext
+        if debug:
+            print("Encrypted: ", plaintext, " -> ", ciphertext)
+    else:
+        print("Error: Encryption failed.")
+    return success, ciphertext

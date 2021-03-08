@@ -22,17 +22,23 @@ loginsBackup = databaseImportLogins(backupDB)
 loginsBroken = databaseImportLogins(brokenDB)
 keyringPassword = open(keyringPasswordFilename).read().strip()
 
+#print(loginsBroken)
+#print(loginsBackup)
+
+#import sys
+#sys.exit(0)
 
 for url, user, encryptedPassword in loginsBackup:
     if len(url) == 0:
         print("Warning: Skipping empty database entry.")
         continue
 
-    print(30 * "-")
+    print(sepCount * "-")
     print("URL: {:s}\nUser: {:s}".format(url, user))
 
-    if hasEntry(brokenDB, url, user):
+    if hasEntry(loginsBroken, url, user):
         print("The broken database also has such an entry.")
+        success, plaintextBackup = decryptDatabasePassword(encryptedPassword, keyringPassword, debug=False)
+        #success, plaintextBroken = decryptDatabasePassword(encryptedPassword, keyringPassword, debug=False)
 
-
-    decryptDatabasePassword(encryptedPassword, keyringPassword)
+    print(sepCount * "-")
