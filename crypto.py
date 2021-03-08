@@ -25,11 +25,21 @@ def paddPlaintext(plaintext, blockSize, debug=False):
     return plaintext.encode("utf-8")
 
 
-def trimPlaintext(x):
+def trimPlaintext(x, debug=False):
     trimCount = x[-1]
-    if trimCount > length(x):
+    if debug:
+        print("Password (untrimmed): ", x)
+    if trimCount > len(x):
         trimCount = 0
-    return x[:-trimCount].decode('utf8')
+    if debug:
+        print("Will trim {:d} trailing bytes.".format(trimCount))
+    y = x[:-trimCount]
+    if debug:
+        print("Password (trimmed):   ", y)
+    s = y.decode('utf8')
+    if debug:
+        print("Password (decoded):   ", s)
+    return s
 
 
 def encryptAES128(plaintext, password, debug=False):
@@ -81,7 +91,7 @@ def decryptAES128(ciphertext, password, debug=False):
         plaintext = cipher.decrypt(ciphertext)
         if debug:
             print("Password (decrypted): ", plaintext)
-        plaintext = trimPlaintext(plaintext, debug=debug)
+        plaintext = trimPlaintext(plaintext, debug=False)
         if debug:
             print("Password (trimmed):   ", plaintext)
         success = True
@@ -95,16 +105,16 @@ def testCrypto(debug=False):
     if debug:
         print(sepCount * "-")
         print("Testing encryption / decryption:")
-    testData = "randomXY/Z012345"
+    testData = "randomXY/Z01234"
     password = "My&Password"
     encryptionSuccess, ciphertext = encryptAES128(testData, password, debug=debug)
     decryptionSuccess, plaintext  = decryptAES128(ciphertext, password, debug=debug)
     if plaintext == testData:
-        print("Crypto engine seems to work.")
         if debug:
+            print("Crypto engine seems to work.")
             print(sepCount * "-")
     else:
-        print("Crypto engine self-test failed. Aborting.")
+        print("Fatal: Crypto self-test failed. Aborting.")
         if debug:
             print(sepCount * "-")
         sys.exit(1)
