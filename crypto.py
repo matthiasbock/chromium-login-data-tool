@@ -7,63 +7,83 @@ from Crypto.Hash import *
 from Crypto.Protocol.KDF import PBKDF2
 
 
+sepCount = 100
+
 chromiumCryptoSalt = b'saltysalt'
 chromiumCryptoBitwidth = 128
 chromiumCryptoIV = b' ' * int(chromiumCryptoBitwidth/8)
-chromiumDefaultPassword = "peanuts"
+chromiumMasterPassword = "peanuts"
 
 
-def paddPlaintext(plaintext, blockSize):
-    plaintextLength = len(plaintext)
-    chrPlaintextLength = chr(plaintextLength)
-    while len(plaintext) % blockSize != 0:
-        plaintext += chrPlaintextLength
-    return plaintext
+def paddPlaintext(plaintext, blockSize, debug=False):
+    length = len(plaintext)
+    num = blockSize - (length % blockSize)
+    if debug:
+        print("Padding: Plaintext size is {:d}, chiffre block size is {:d}, padding {:d} bytes to get {:d} bytes.".format(length, blockSize, num, length+num))
+    padding = num * chr(num)
+    plaintext += padding
+    return plaintext.encode("utf-8")
 
 
 def trimPlaintext(x):
-    return x[:-x[-1]].decode('utf8')
+    trimCount = x[-1]
+    if trimCount > length(x):
+        trimCount = 0
+    return x[:-trimCount].decode('utf8')
 
 
-def encryptAES128(plaintext, key):
+def encryptAES128(plaintext, password, debug=False):
     salt = chromiumCryptoSalt
     bits = chromiumCryptoBitwidth
     length = int(bits/8)
     iterations = 1
-    pb_pass = key.encode("utf-8")
+    pb_pass = password.encode("utf-8")
     key = PBKDF2(pb_pass, salt, length, iterations)
 
     iv = chromiumCryptoIV
     cipher = AES.new(key, AES.MODE_CBC, IV=iv)
 
     success = False
+    ciphertext = None
     try:
-        plaintext = paddPlaintext(plaintext, length)
+        if debug:
+            print("Password (plaintext): ", plaintext)
+        plaintext = paddPlaintext(plaintext, length, debug=False)
+        if debug:
+            print("Password (padded):    ", plaintext)
         ciphertext = cipher.encrypt(plaintext)
-        print("Password (encrypted): ", plaintext)
+        if debug:
+            print("Password (encrypted): ", ciphertext)
         success = True
     except:
-        print("Error: An error occured during encryption.")
+        if debug:
+            print("Error: An error occured during encryption.")
 
     return success, ciphertext
 
 
-def decryptAES128(ciphertext, key):
+def decryptAES128(ciphertext, password, debug=False):
     salt = chromiumCryptoSalt
     bits = chromiumCryptoBitwidth
     length = int(bits/8)
     iterations = 1
-    pb_pass = key.encode("utf-8")
+    pb_pass = password.encode("utf-8")
     key = PBKDF2(pb_pass, salt, length, iterations)
 
     iv = chromiumCryptoIV
     cipher = AES.new(key, AES.MODE_CBC, IV=iv)
 
     success = False
+    plaintext = None
     try:
+        if debug:
+            print("Password (encrypted): ", ciphertext)
         plaintext = cipher.decrypt(ciphertext)
-        plaintext = trimPlaintext(plaintext)
-        print("Password (decrypted): ", plaintext)
+        if debug:
+            print("Password (decrypted): ", plaintext)
+        plaintext = trimPlaintext(plaintext, debug=debug)
+        if debug:
+            print("Password (trimmed):   ", plaintext)
         success = True
     except:
         print("Error: An error occured during decryption.")
@@ -71,15 +91,22 @@ def decryptAES128(ciphertext, key):
     return success, plaintext
 
 
-def testCrypto():
-    key = "randomXY/Z0123"
+def testCrypto(debug=False):
+    if debug:
+        print(sepCount * "-")
+        print("Testing encryption / decryption:")
+    testData = "randomXY/Z012345"
     password = "My&Password"
-    ciphertext = encryptAES128(password, key)
-    plaintext = decryptAES128(ciphertext, key)
-    if plaintext == password:
+    encryptionSuccess, ciphertext = encryptAES128(testData, password, debug=debug)
+    decryptionSuccess, plaintext  = decryptAES128(ciphertext, password, debug=debug)
+    if plaintext == testData:
         print("Crypto engine seems to work.")
+        if debug:
+            print(sepCount * "-")
     else:
         print("Crypto engine self-test failed. Aborting.")
+        if debug:
+            print(sepCount * "-")
         sys.exit(1)
 
 
@@ -92,19 +119,19 @@ def decryptDatabasePassword(encryptedPassword, keyringPassword):
     ciphertext = encryptedPassword[3:]
 
     if encryptedPassword[:3] == b"v10":
-        key = chromiumDefaultPassword
-        return decryptAES128(ciphertext, key)
+        password = chromiumMasterPassword
+        return decryptAES128(ciphertext, password)
 
     if encryptedPassword[:3] == b"v11":
-        key = keyringPassword
-        return decryptAES128(ciphertext, key)
+        password = keyringPassword
+        return decryptAES128(ciphertext, password)
 
     print("Error: Password entry is improperly formatted.")
 
 
 def encryptPlaintextPassword(plaintext):
-    key = chromiumDefaultPassword
-    ciphertext = encryptAES128(plaintext, key)
+    password = chromiumMasterPassword
+    ciphertext = encryptAES128(plaintext, password)
     ciphertext = b"v10" + ciphertext
     print("Encrypted: ", plaintext, " -> ", ciphertext)
     return ciphertext

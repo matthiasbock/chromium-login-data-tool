@@ -11,7 +11,7 @@ from database import *
 from crypto import *
 
 
-testCrypto()
+testCrypto(debug=True)
 
 folder = "2021-03_chromium-password-recovery"
 brokenDB = os.path.join(folder, "Login_Data.2021-03-08")
