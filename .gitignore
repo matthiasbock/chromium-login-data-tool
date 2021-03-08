@@ -1,0 +1,18 @@
+
+*.pyc
+__pycache__
+
+.*.swp
+.~lock*
+
+*Password*
+*password*
+*Recovery*
+*recovery*
+*Login\ Data*
+*Login_Data*
+*login\ data*
+*login_data*
+
+voldemort
+
