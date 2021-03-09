@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import sys
-from base64 import *
 from Crypto.Cipher import AES
 from Crypto.Hash import *
 from Crypto.Protocol.KDF import PBKDF2
@@ -105,19 +103,22 @@ def testCrypto(debug=False):
     if debug:
         print(sepCount * "-")
         print("Testing encryption / decryption:")
+
     testData = "randomXY/Z01234"
     password = "My&Password"
     encryptionSuccess, ciphertext = encryptAES(testData, password, debug=debug)
     decryptionSuccess, plaintext  = decryptAES(ciphertext, password, debug=debug)
+
     if plaintext == testData:
         if debug:
-            print("Crypto engine seems to work.")
+            print("Success: Crypto self-test passed.")
             print(sepCount * "-")
-    else:
-        print("Fatal: Crypto self-test failed. Aborting.")
-        if debug:
-            print(sepCount * "-")
-        sys.exit(1)
+        return True
+
+    print("Error: Crypto self-test failed.")
+    if debug:
+        print(sepCount * "-")
+    return False
 
 
 def decryptDatabasePassword(encryptedPassword, keyringPassword, debug=False):

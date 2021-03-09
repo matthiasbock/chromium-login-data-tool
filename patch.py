@@ -6,36 +6,38 @@
 # Lists all passwords, which are (still) broken.
 #
 
-import os, shutil
+import sys, os, shutil
 from database import *
 from crypto import *
 
 
-testCrypto(debug=True)
+# Perform a crypto self-test
+if not testCrypto(debug=False):
+    print("Can't work without functional crypto engine. Aborting.")
+    sys.exit(1)
 
+# Files and folders
 folder = "2021-03_chromium-password-recovery"
 brokenDB = os.path.join(folder, "Login_Data.2021-03-08")
 backupDB = os.path.join(folder, "Login_Data.2021-02-06")
 restoredDB = os.path.join(folder, "recovery.db")
 keyringPasswordFilename = os.path.join(folder, "keyringPassword")
 
+# Data
 loginsBackup = databaseImportLogins(backupDB)
 loginsBroken = databaseImportLogins(brokenDB)
-shutil.copyfile(brokenDB, restoredDB)
+if not os.path.exists(restoredDB):
+    shutil.copyfile(brokenDB, restoredDB)
 keyringPassword = open(keyringPasswordFilename).read().strip()
 
-#print(loginsBroken)
-#print(loginsBackup)
-
-#import sys
-#sys.exit(0)
-
+# Statistics
 countSkipped = 0
 countProcessed = 0
 countNoAction = 0
 countRestored = 0
 countUnsuccessful = 0
 
+# Process data
 for url, user, encryptedPassword in loginsBackup:
     if len(url) == 0:
         print("Warning: Skipping empty database entry.")
@@ -60,7 +62,7 @@ for url, user, encryptedPassword in loginsBackup:
         countUnsuccessful += 1
         continue
 
-    print("Succees.")
+    print("Success.")
 
     print("Decrypting password from current database ... ")
     brokenPassword = getPassword(loginsBroken, url, user)
@@ -76,16 +78,22 @@ for url, user, encryptedPassword in loginsBackup:
         countNoAction += 1
     else:
         print("Failed.")
-        print("Restoring backup password: {:s}".format(plaintextBackup))
-        success, recryptedPassword = encryptPlaintextPassword(plaintextBackup, debug=True)
+        print("Restoring password from backup ...") #" {:s}".format(plaintextBackup))
+        success, recryptedPassword = encryptPlaintextPassword(plaintextBackup, debug=False)
         if success:
-            databaseUpdatePassword(restoredDB, url, user, recryptedPassword)
-            countRestored += 1
+            success = databaseUpdatePassword(restoredDB, url, user, recryptedPassword, debug=False)
+            if success:
+                print("Success.")
+                countRestored += 1
+            else:
+                print("For some reason the database update has failed.")
+                countUnsuccessful += 1
         else:
             countUnsuccessful += 1
 
     print(sepCount * "-")
 
+# Print Statistics
 print("Statistics:")
 print("Processed: {:d}".format(countProcessed))
 print("Skipped: {:d}".format(countSkipped))
