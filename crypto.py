@@ -169,7 +169,7 @@ def decryptDatabasePassword(encryptedPassword, keyringPassword, debug=False):
     return success, plaintext
 
 
-def encryptPlaintextPassword(plaintext):
+def encryptPlaintextPassword(plaintext, debug=False):
     password = chromiumMasterPassword
     success, ciphertext = encryptAES(plaintext, password)
     if success:
